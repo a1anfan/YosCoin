@@ -93,7 +93,9 @@ class Node:
                 if attemptBlock.satisfiedDifficulty() >= childDiff:
                     print("Took {} attempts".format(attempts))
                     self.chain.addBlock(attemptBlock)
-                    self.shareChain()
+                    # self.shareChain()
+                    self.mining = False
+
         Thread(target = m).start()
         
     def stopMining(self):
@@ -102,6 +104,7 @@ class Node:
     # Shares chain with all peers BUT IT SHOULD ONLY SHARE WITH ONE INSTEAD
     def shareChain(self, recipient='all'):
         chain = self.chain.toJSON()
+        print(chain)
         self.sendToPeers({
             "type": "CHAIN",
             "data": chain
@@ -193,14 +196,22 @@ class Node:
                 else:
                     raise e
             if len(chunk):
-                if chunk != b'null':
+                print(len(chunk))
+                print(chunk)
+                # CHANGED THIS
+                if chunk != 'null':
                     self.handleRequest(json.loads(chunk), address[0])
                     
     def sendToPeers(self, request, recipient='all'):
         data = json.dumps(request).encode("utf-8")
         for peer in self.peerSocks:
             if recipient == 'all' or recipient == peer:
-                self.peerSocks[peer].send(data)
+                try:
+                    self.peerSocks[peer].send(data)
+                except ConnectionAbortedError as e:
+                    print(e)
+                    self.connectToPeer(peer)
+                # self.peerSocks[peer].send(data)
     
     def addPeer(self, peer):
         if not peer in self.peers:
